@@ -1,5 +1,6 @@
 # Push changes
-git push origin main  
+git push
+git push origin main (alleen als git push niet werkt)
 
 # Pull the latest changes (without rebase)
 git pull origin main  
