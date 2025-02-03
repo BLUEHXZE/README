@@ -9,11 +9,15 @@ var builder = WebApplication.CreateBuilder(args);
 //ToDo... 
 //Code for Service and Controller
 //Take into account MemoryDB storage lacks persistency when registering the service.
-
+builder.Services.AddSingleton<MemoryDB>();
+builder.Services.AddScoped<IExamService, ExamService>();
+builder.Services.AddControllers();
+builder.Services.AddScoped<PowerUser>();
 
 var app = builder.Build();
 //ToDo...
 //Code for Controller
+app.MapControllers();
 
 app.UseStaticFiles();
 
@@ -72,10 +76,15 @@ app.MapGet("/api/questions", (string? kind) =>
 
 app.Use(async (context, next) =>
 {
-  await next.Invoke();
-  //ToDo..
-});
+    await next.Invoke();
 
+    var path = context.Request.Path;
+    if (!path.StartsWithSegments("/dummy"))
+    {
+        var logEntry = $"{DateTime.Now}: {context.Request.Method} {context.Request.Path} responded {context.Response.StatusCode}{Environment.NewLine}";
+        await System.IO.File.AppendAllTextAsync("exam.log", logEntry);
+    }
+});
 
 app.Run("http://localhost:5005");
 
@@ -144,52 +153,156 @@ public class MemoryDB {
     }
 }
 
-public interface IExamService{
-
-	public Task<bool> Insert(MultipleChoiceQuestion q);
-	public Task<bool> Update(MultipleChoiceQuestion q);
-	public Task<List<MultipleChoiceQuestion>> ReadBatch(List<int> ids);
-	public Task<bool> Delete(int id);
+public interface IExamService
+{
+    // Define the methods that need to be implemented
+    void Insert(MultipleChoiceQuestion question);
+    void Update(MultipleChoiceQuestion question);
+    IEnumerable<MultipleChoiceQuestion> ReadBatch(IEnumerable<int> indices);
+    void Delete(int id);
+    void Seed();
 }
 
 //ToDo: Most of the code should be here:
 
 // ToDo: Complete ExamController
 
-public class ExamController : Controller { 
+public class ExamController : Controller
+{
+    private readonly IExamService _examService;
 
+    public ExamController(IExamService examService)
+    {
+        _examService = examService;
+    }
+
+    [HttpGet("dummy/{id}/url")]
+    public IActionResult GetDummy(int id, [FromQuery] int url)
+    {
+        if (id != url)
+        {
+            return BadRequest("ID and URL do not match.");
+        }
+        return Ok(new { id, url });
+    }
+
+    [HttpPost("dummy")]
+    public IActionResult PostDummy([FromBody] object body)
+    {
+        if (body == null)
+        {
+            return BadRequest("Invalid data");
+        }
+        return Ok(body);
+    }
+
+    [HttpPost("insert")]
+    [ServiceFilter(typeof(PowerUser))]
+    public async Task<IActionResult> Insert([FromBody] MultipleChoiceQuestion question)
+    {
+        if (await _examService.Insert(question))
+        {
+            return Ok();
+        }
+        return BadRequest();
+    }
+
+    [HttpPost("update")]
+    [ServiceFilter(typeof(PowerUser))]
+    public async Task<IActionResult> Update([FromBody] MultipleChoiceQuestion question)
+    {
+        if (await _examService.Update(question))
+        {
+            return Ok();
+        }
+        return BadRequest();
+    }
+
+    [HttpGet("readbatch")]
+    public async Task<IActionResult> ReadBatch([FromQuery] List<int> ids)
+    {
+        var result = await _examService.ReadBatch(ids);
+        if (result != null)
+        {
+            return Ok(result);
+        }
+        return BadRequest();
+    }
+
+    [HttpDelete("delete/{id}")]
+    [ServiceFilter(typeof(PowerUser))]
+    public async Task<IActionResult> Delete(int id)
+    {
+        if (await _examService.Delete(id))
+        {
+            return Ok();
+        }
+        return BadRequest();
+    }
 }
 
 // ToDo: Implement ExamService
 public class ExamService : IExamService
 {
-    public Task<bool> Delete(int id)
+    private readonly List<MultipleChoiceQuestion> _memoryDb;
+
+    public ExamService()
     {
-        throw new NotImplementedException();
+        _memoryDb = new List<MultipleChoiceQuestion>();
+        Seed();
     }
 
-    public Task<bool> Insert(MultipleChoiceQuestion q)
+    public void Insert(MultipleChoiceQuestion question)
     {
-        throw new NotImplementedException();
+        _memoryDb.Add(question);
     }
 
-    public Task<List<MultipleChoiceQuestion>> ReadBatch(List<int> ids)
+    public void Update(MultipleChoiceQuestion question)
     {
-        throw new NotImplementedException();
+        var index = _memoryDb.FindIndex(q => q.Id == question.Id);
+        if (index != -1)
+        {
+            _memoryDb[index] = question;
+        }
     }
 
-    public Task<bool> Update(MultipleChoiceQuestion q)
+    public IEnumerable<MultipleChoiceQuestion> ReadBatch(IEnumerable<int> indices)
     {
-        throw new NotImplementedException();
+        return _memoryDb.Where(q => indices.Contains(q.Id));
+    }
+
+    public void Delete(int id)
+    {
+        var question = _memoryDb.FirstOrDefault(q => q.Id == id);
+        if (question != null)
+        {
+            _memoryDb.Remove(question);
+        }
+    }
+
+    public void Seed()
+    {
+        // Seed the memory database with initial data
+        _memoryDb.AddRange(new List<MultipleChoiceQuestion>
+        {
+            new MultipleChoiceQuestion { Id = 1, Statement = "Sample Question 1", Choices = new List<string> { "A", "B", "C" }, CorrectAnswer = 0 },
+            new MultipleChoiceQuestion { Id = 2, Statement = "Sample Question 2", Choices = new List<string> { "D", "E", "F" }, CorrectAnswer = 1 }
+        });
     }
 }
+
 //ToDo: Implement Filter here 
 public class PowerUser : Attribute, IAsyncActionFilter
 {
-  public async Task OnActionExecutionAsync(
-      ActionExecutingContext actionContext, ActionExecutionDelegate next)
-  {
-    //ToDo...
+    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    {
+        if (!context.HttpContext.Request.Headers.TryGetValue("Authorization", out var token) ||
+            !token.ToString().Contains("PowerUser"))
+        {
+            context.Result = new UnauthorizedResult();
+            return;
+        }
 
-  } 
+        await next();
+    }
 }
