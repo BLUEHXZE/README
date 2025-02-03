@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "target": "ESNext",
+        "module": "CommonJS",
+        "allowJs": true,
+        "jsx": "react-jsx",
+        "outDir": "./dist",
+        "strict": true,
+        "noImplicitAny": true,
+    }
+}

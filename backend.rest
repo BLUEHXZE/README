@@ -1,0 +1,230 @@
+
+
+### Front end section
+GET http://localhost:5005/api/questions
+###
+
+GET http://localhost:5005/api/questions?kind=mcq
+###
+
+GET http://localhost:5005/api/questions?kind=open
+###
+
+GET http://localhost:5005/api/questions?kind=op
+###
+
+
+
+### Back end section
+
+GET http://localhost:5005/api/exams/dummy/4/?url=4
+### Expected Response: 200 OK
+
+GET http://localhost:5005/api/exams/dummy/4/?url=2
+### Expected Response: 400 Bad Request
+
+GET http://localhost:5005/api/exams/dummy/4/
+### Expected Response: 400 Bad Request
+
+POST http://localhost:5005/api/exams/dummy
+Content-Type: application/json
+
+{
+    "Id": "95F802C1-ED8B-49DC-BBAD-0319D33586E1",
+    "Title": "La Divina Commedia",
+    "Author": "Dante Alighieri",
+    "Volumes": 3,
+    "Price": 200,
+    "Quantity": 30
+}
+
+### Expected Response: 200 OK
+
+POST http://localhost:5005/api/exams/dummy/
+Content-Type: application/json
+
+### Expected Response: 400 Bad Request
+
+
+
+### Exam Records endpoints:
+
+
+GET http://localhost:5005/api/exams/ReadBatch/?ids=1&ids=2&ids=2&ids=3
+### Expected Response: 200 OK
+
+GET http://localhost:5005/api/exams/ReadBatch/?ids=10&ids=100&ids=2&ids=-3
+### Expected Response: 200 OK
+
+GET http://localhost:5005/api/exams/ReadBatch/?ids=221&ids=322&ids=4222&ids=-322
+### Expected Response: 200 OK
+
+GET http://localhost:5005/api/exams/ReadBatch/
+### Expected Response: 400 Bad Request
+
+
+### Unauthorized endpoints when filter applied Q5:
+POST http://localhost:5005/api/exams/Insert
+Content-Type: application/json
+
+{
+    "choices": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ],
+    "correctAnswer": 2,
+    "id": 100,
+    "statement": "Which of the following?"
+  }
+
+### Expected Response: 200 OK | 400 Bad Request
+
+POST http://localhost:5005/api/exams/Insert
+Content-Type: application/json
+
+{
+    "choices": [
+      "1",
+      "2"
+    ],
+    "correctAnswer": 2,
+    "id": 150,
+    "statement": "Which of the following 2?"
+  }
+
+### Expected Response: 200 OK | 400 Bad Request
+
+
+POST http://localhost:5005/api/exams/Insert
+Content-Type: application/json
+### Expected Response: 400 Bad Request
+
+POST http://localhost:5005/api/exams/Update
+Content-Type: application/json
+
+{
+    "choices": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ],
+    "correctAnswer": 2,
+    "id": 1,
+    "statement": "Which of the following 4?"
+  }
+
+### Expected Response: 200 OK | 400 Bad Request
+
+POST http://localhost:5005/api/exams/Update
+Content-Type: application/json
+
+
+### Expected Response: 400 Bad Request
+
+
+
+DELETE http://localhost:5005/api/exams/Delete/1
+### Expected Response: 200 OK | 400 Bad Request
+
+DELETE http://localhost:5005/api/exams/Delete/2
+### Expected Response: 200 OK | 400 Bad Request
+
+DELETE http://localhost:5005/api/exams/Delete/2
+### Expected Response: 200 OK | 400 Bad Request
+
+DELETE http://localhost:5005/api/exams/Delete/-1
+### Expected Response: 200 OK | 400 Bad Request
+
+DELETE http://localhost:5005/api/exams/Delete/10
+### Expected Response: 200 OK | 400 Bad Request
+
+
+### Authorized endpoints when filter applied Q5:
+
+POST http://localhost:5005/api/exams/Insert
+Content-Type: application/json
+BearerToken:PowerUser
+
+{
+    "choices": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ],
+    "correctAnswer": 2,
+    "id": 100,
+    "statement": "Which of the following?"
+  }
+
+### Expected Response: 200 OK | 400 Bad Request
+
+POST http://localhost:5005/api/exams/Insert
+Content-Type: application/json
+BearerToken:PowerUser
+
+{
+    "choices": [
+      "1",
+      "2"
+    ],
+    "correctAnswer": 2,
+    "id": 150,
+    "statement": "Which of the following 2?"
+  }
+
+### Expected Response: 200 OK | 400 Bad Request
+
+
+POST http://localhost:5005/api/exams/Insert
+Content-Type: application/json
+BearerToken:PowerUser
+
+### Expected Response: 400 Bad Request
+
+POST http://localhost:5005/api/exams/Update
+Content-Type: application/json
+BearerToken:PowerUser
+
+{
+    "choices": [
+      "1",
+      "2",
+      "3",
+      "4"
+    ],
+    "correctAnswer": 2,
+    "id": 1,
+    "statement": "Which of the following 4?"
+  }
+
+### Expected Response: 200 OK | 400 Bad Request
+
+POST http://localhost:5005/api/exams/Update
+Content-Type: application/json
+BearerToken:PowerUser
+
+### Expected Response: 400 Bad Request
+
+
+DELETE http://localhost:5005/api/exams/Delete/1
+BearerToken:PowerUser
+### Expected Response: 200 OK | 400 Bad Request
+
+DELETE http://localhost:5005/api/exams/Delete/2
+BearerToken:PowerUser
+### Expected Response: 200 OK | 400 Bad Request
+
+DELETE http://localhost:5005/api/exams/Delete/2
+### Expected Response: 200 OK | 400 Bad Request
+
+DELETE http://localhost:5005/api/exams/Delete/-1
+BearerToken:PowerUser
+### Expected Response: 200 OK | 400 Bad Request
+
+DELETE http://localhost:5005/api/exams/Delete/10
+BearerToken:PowerUser
+### Expected Response: 200 OK | 400 Bad Request
